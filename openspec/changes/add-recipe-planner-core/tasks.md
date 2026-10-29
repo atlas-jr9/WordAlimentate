@@ -4,9 +4,9 @@
 
 - [x] 1.1 Scaffold Vite + React + TypeScript con ESLint y Tailwind; verificar que `npm run build` completa y genera el bundle
   <!-- Inicializa el proyecto base con toda la tooling del stack decidido. -->
-- [ ] 1.2 Crear proyecto Supabase y guardar credenciales (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) como variables de entorno de Vercel y `.env.local`
+- [x] 1.2 Crear proyecto Supabase y guardar credenciales (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) como variables de entorno de Vercel y `.env.local`
   <!-- Configura el servicio de datos externo sin exponer claves en el repo -->
-- [ ] 1.3 Escribir migración SQL inicial con tablas `recipes`, `recipe_ingredients`, `tags`, `recipe_tags`, `plan_slots`, `shopping_list_items` (constraints y unique por design.md); verificar que se aplica en Supabase limpia sin errores
+- [x] 1.3 Escribir migración SQL inicial con tablas `recipes`, `recipe_ingredients`, `tags`, `recipe_tags`, `plan_slots`, `shopping_list_items` (constraints y unique por design.md); verificar que se aplica en Supabase limpia sin errores
   <!-- Crea el modelo de datos versionado en el repo -->
 - [ ] 1.4 Activar RLS en todas las tablas con policies que solo den acceso a usuarios autenticados; verificar con SQL que un anon call no ve filas y el usuario sí
   <!-- Garantiza la privacidad a nivel de base de datos, no de interfaz -->
