@@ -21,11 +21,18 @@ export default function App() {
       })
 
       if (error) {
-        setErrorMessage(
+        if (error.code === 'email_not_confirmed') {
+          setErrorMessage(
+            'El correo de esta cuenta no está confirmado. Confírmalo en Supabase → Authentication → Users e inténtalo de nuevo.',
+          )
+        } else if (
+          error.code === 'invalid_credentials' ||
           error.message.toLowerCase().includes('invalid login credentials')
-            ? 'El correo o la contraseña no son correctos.'
-            : 'No se pudo iniciar sesión. Comprueba tus datos e inténtalo de nuevo.',
-        )
+        ) {
+          setErrorMessage('El correo o la contraseña no son correctos.')
+        } else {
+          setErrorMessage(`No se pudo iniciar sesión: ${error.message}`)
+        }
         return
       }
 
