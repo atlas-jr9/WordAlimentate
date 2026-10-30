@@ -4,6 +4,7 @@ import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import RecipeEditorPage from './RecipeEditorPage'
 import RecipesPage from './RecipesPage'
+import WeeklyPlannerPage from './WeeklyPlannerPage'
 import { supabase } from './lib/supabase'
 
 export default function App() {
@@ -219,16 +220,30 @@ function AuthenticatedHome() {
   return (
     <main className="min-h-screen bg-stone-50 px-4 py-8">
       <div className="mx-auto w-full max-w-5xl">
-        <header className="mb-8 flex items-center justify-between gap-4">
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Link className="text-xl font-semibold text-stone-900" to="/">WordAlimentate</Link>
-          <button
-            className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSigningOut}
-            onClick={handleSignOut}
-            type="button"
-          >
-            {isSigningOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
-          </button>
+          <nav aria-label="Navegación principal" className="flex items-center gap-4">
+            <Link
+              className="text-sm font-medium text-stone-700 hover:text-emerald-800"
+              to="/"
+            >
+              Recetas
+            </Link>
+            <Link
+              className="text-sm font-medium text-stone-700 hover:text-emerald-800"
+              to="/plan"
+            >
+              Plan semanal
+            </Link>
+            <button
+              className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isSigningOut}
+              onClick={handleSignOut}
+              type="button"
+            >
+              {isSigningOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
+            </button>
+          </nav>
         </header>
         {signOutError && (
           <p className="mb-6 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
@@ -239,6 +254,7 @@ function AuthenticatedHome() {
           <Route element={<RecipesPage />} path="/" />
           <Route element={<RecipeEditorPage />} path="/recipes/new" />
           <Route element={<RecipeEditorPage />} path="/recipes/:recipeId/edit" />
+          <Route element={<WeeklyPlannerPage />} path="/plan" />
           <Route element={<Navigate replace to="/" />} path="*" />
         </Routes>
       </div>

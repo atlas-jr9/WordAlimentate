@@ -6,6 +6,7 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { MemoryRouter } from 'react-router-dom'
+import { getWeekStart } from './lib/planner'
 import App from './App'
 
 const authMocks = vi.hoisted(() => ({
@@ -21,6 +22,9 @@ const recipeMocks = vi.hoisted(() => ({
   updateRecipe: vi.fn(),
   deleteRecipe: vi.fn(),
 }))
+const plannerMocks = vi.hoisted(() => ({
+  listPlanSlots: vi.fn(),
+}))
 
 vi.mock('./lib/supabase', () => ({
   supabase: { auth: authMocks },
@@ -32,6 +36,10 @@ vi.mock('./lib/recipes', async (importOriginal) => ({
   createRecipe: recipeMocks.createRecipe,
   updateRecipe: recipeMocks.updateRecipe,
   deleteRecipe: recipeMocks.deleteRecipe,
+}))
+vi.mock('./lib/planner', async (importOriginal) => ({
+  ...await importOriginal<typeof import('./lib/planner')>(),
+  listPlanSlots: plannerMocks.listPlanSlots,
 }))
 
 let authStateListener: ((event: AuthChangeEvent, session: Session | null) => void) | null = null
@@ -46,6 +54,7 @@ beforeEach(() => {
   authStateListener = null
   authMocks.getSession.mockResolvedValue({ data: { session: null }, error: null })
   recipeMocks.listRecipes.mockResolvedValue([])
+  plannerMocks.listPlanSlots.mockResolvedValue([])
   authMocks.onAuthStateChange.mockImplementation((listener) => {
     authStateListener = listener
     return { data: { subscription: { unsubscribe: vi.fn() } } }
@@ -272,5 +281,66 @@ describe('recipe catalog', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar la receta.')
     expect(screen.getByRole('heading', { name: recipe.name })).toBeInTheDocument()
+  })
+})
+
+describe('weekly planner', () => {
+  beforeEach(() => {
+    authMocks.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-id' } } },
+      error: null,
+    })
+  })
+
+  it('shows seven days with lunch and dinner and loads a separate plan for the next week', async () => {
+    const user = userEvent.setup()
+    const firstWeek = getWeekStart()
+    const nextWeekDate = new Date(`${firstWeek}T00:00:00.000Z`)
+    nextWeekDate.setUTCDate(nextWeekDate.getUTCDate() + 7)
+    const nextWeek = nextWeekDate.toISOString().slice(0, 10)
+
+    plannerMocks.listPlanSlots.mockImplementation(async (weekStart: string) => {
+      if (weekStart === firstWeek) {
+        return [{
+          id: 'first-week-slot',
+          weekStart,
+          dayOfWeek: 0,
+          slot: 'lunch',
+          recipeId: 'recipe-first',
+          recipe: { id: 'recipe-first', name: 'Menú primera semana', foodType: 'lunch', servings: 2 },
+        }]
+      }
+      if (weekStart === nextWeek) {
+        return [{
+          id: 'next-week-slot',
+          weekStart,
+          dayOfWeek: 3,
+          slot: 'dinner',
+          recipeId: 'recipe-next',
+          recipe: { id: 'recipe-next', name: 'Menú siguiente semana', foodType: 'dinner', servings: 4 },
+        }]
+      }
+      return []
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/plan']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Menú primera semana')).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(7)
+    expect(screen.getAllByText('Comida')).toHaveLength(7)
+    expect(screen.getAllByText('Cena')).toHaveLength(7)
+
+    await user.click(screen.getByRole('button', { name: 'Semana siguiente' }))
+    expect(await screen.findByText('Menú siguiente semana')).toBeInTheDocument()
+    expect(screen.queryByText('Menú primera semana')).not.toBeInTheDocument()
+    expect(plannerMocks.listPlanSlots).toHaveBeenNthCalledWith(1, firstWeek)
+    expect(plannerMocks.listPlanSlots).toHaveBeenNthCalledWith(2, nextWeek)
+
+    await user.click(screen.getByRole('button', { name: 'Hoy' }))
+    expect(await screen.findByText('Menú primera semana')).toBeInTheDocument()
   })
 })

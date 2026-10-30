@@ -45,7 +45,7 @@
 
 - [x] 4.1 Modelar tipos y acceso a datos de `plan_slots` (leer semana, upsert ranura, vaciar ranura) con `week_start` como lunes ISO; verificar operación de datos con dos semanas distintas de forma independiente
   <!-- Capa de datos del planner sobre semanas reales -->
-- [ ] 4.2 Implementar vista semanal 7 días × 2 ranuras (comida/cena) con navegación entre semanas (anterior/siguiente/hoy); verificar que las semanas muestran planes distintos
+- [x] 4.2 Implementar vista semanal 7 días × 2 ranuras (comida/cena) con navegación entre semanas (anterior/siguiente/hoy); verificar que las semanas muestran planes distintos
   <!-- La cuadrícula del planificador y su requisito de semanas con fecha -->
 - [ ] 4.3 Implementar selector de receta por ranura: elegir desde el catálogo, asignar la misma receta dos veces y vaciar la ranura; verificar que la vista refleja siempre el estado de la base de datos
   <!-- Cubre "assign and remove recipes" -->
