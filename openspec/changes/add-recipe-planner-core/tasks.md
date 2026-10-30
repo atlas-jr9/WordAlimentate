@@ -12,7 +12,7 @@
   <!-- Garantiza la privacidad a nivel de base de datos, no de interfaz -->
 - [x] 1.5 Crear la cuenta única en el panel de Supabase con registro público deshabilitado; verificar que el intento de signup desde API falla
   <!-- Deja el acceso cerrado a un solo usuario: requisito de private-access -->
-- [ ] 1.6 Conectar el repo a Vercel y desplegar el scaffold vacío; verificar la URL de preview responde
+- [x] 1.6 Conectar el repo a Vercel y desplegar el scaffold vacío; verificar la URL de preview responde
   <!-- Confirma el pipeline de despliegue antes de escribir features -->
 
 ## 2. Acceso privado
