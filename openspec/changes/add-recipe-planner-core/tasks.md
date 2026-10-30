@@ -38,7 +38,7 @@
   <!-- Cubre los requisitos de filtrado y búsqueda del catálogo -->
 - [x] 3.5 Implementar eliminación de receta con confirmación y limpieza de ranuras que la referencian; verificar que tras borrar una receta planificada la ranura queda vacía
   <!-- Evita referencias huérfanas en el plan -->
-- [ ] 3.6 Test de la lógica de filtrado/búsqueda con fixtures de recetas; verificar que el test corre
+- [x] 3.6 Test de la lógica de filtrado/búsqueda con fixtures de recetas; verificar que el test corre
   <!-- Asegura que los filtros no se rompen en el futuro -->
 
 ## 4. Planificador semanal
