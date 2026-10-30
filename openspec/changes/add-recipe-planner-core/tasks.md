@@ -17,7 +17,7 @@
 
 ## 2. Acceso privado
 
-- [ ] 2.1 Configurar cliente Supabase Auth y sesión de login por email+contraseña; verificar que login con credenciales correctas crea sesión y las incorrectas fallan con mensaje claro
+- [x] 2.1 Configurar cliente Supabase Auth y sesión de login por email+contraseña; verificar que login con credenciales correctas crea sesión y las incorrectas fallan con mensaje claro
   <!-- Implementa la puerta de entrada de la app -->
 - [ ] 2.2 Añadir guard en el router: rutas privadas redirigen a /login sin sesión y la sesión persiste tras recargar; verificar manualmente ambos casos
   <!-- Cubre el requisito "session required for all content" -->
