@@ -1,13 +1,92 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 
 export default function App() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [isLoadingSession, setIsLoadingSession] = useState(true)
+  const [sessionError, setSessionError] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (isMounted) {
+        setSession(nextSession)
+        setIsLoadingSession(false)
+      }
+    })
+
+    void supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!isMounted) return
+        if (error) {
+          console.error('Error al restaurar la sesión de Supabase:', error)
+          setSessionError('No se pudo comprobar la sesión. Recarga la página para volver a intentarlo.')
+        } else {
+          setSession(data.session)
+        }
+        setIsLoadingSession(false)
+      })
+      .catch((error: unknown) => {
+        if (!isMounted) return
+        console.error('Error inesperado al restaurar la sesión:', error)
+        setSessionError('No se pudo comprobar la sesión. Recarga la página para volver a intentarlo.')
+        setIsLoadingSession(false)
+      })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  if (isLoadingSession) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
+        <p className="text-stone-600" role="status">Comprobando sesión…</p>
+      </main>
+    )
+  }
+
+  if (sessionError) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
+        <p className="max-w-md rounded-lg bg-red-50 px-4 py-3 text-center text-sm text-red-800" role="alert">
+          {sessionError}
+        </p>
+      </main>
+    )
+  }
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={session ? <Navigate replace to="/" /> : <LoginPage onAuthenticated={setSession} />}
+      />
+      <Route
+        path="*"
+        element={session ? <AuthenticatedHome /> : <RedirectToLogin />}
+      />
+    </Routes>
+  )
+}
+
+function RedirectToLogin() {
+  const location = useLocation()
+  return <Navigate replace state={{ from: location }} to="/login" />
+}
+
+function LoginPage({ onAuthenticated }: { onAuthenticated: (session: Session) => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -41,26 +120,13 @@ export default function App() {
         return
       }
 
-      setIsAuthenticated(true)
+      onAuthenticated(data.session)
     } catch (error) {
       console.error('Error inesperado al iniciar sesión:', error)
       setErrorMessage('No se pudo conectar con el servicio. Inténtalo de nuevo.')
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  if (isAuthenticated) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
-        <section className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg shadow-stone-200/70">
-          <h1 className="text-2xl font-semibold text-stone-900">WordAlimentate</h1>
-          <p className="mt-4 text-stone-600" role="status">
-            Sesión iniciada correctamente.
-          </p>
-        </section>
-      </main>
-    )
   }
 
   return (
@@ -121,6 +187,19 @@ export default function App() {
             {isSubmitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
           </button>
         </form>
+      </section>
+    </main>
+  )
+}
+
+function AuthenticatedHome() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
+      <section className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg shadow-stone-200/70">
+        <h1 className="text-2xl font-semibold text-stone-900">WordAlimentate</h1>
+        <p className="mt-4 text-stone-600" role="status">
+          Sesión iniciada correctamente.
+        </p>
       </section>
     </main>
   )
