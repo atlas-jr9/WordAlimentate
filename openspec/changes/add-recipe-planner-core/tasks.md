@@ -21,18 +21,18 @@
   <!-- Implementa la puerta de entrada de la app -->
 - [x] 2.2 Añadir guard en el router: rutas privadas redirigen a /login sin sesión y la sesión persiste tras recargar; verificar manualmente ambos casos
   <!-- Cubre el requisito "session required for all content" -->
-- [ ] 2.3 Añadir botón de cerrar sesión en la navegación; verificar que tras cerrar sesión se vuelve a /login y no se ve contenido
+- [x] 2.3 Añadir botón de cerrar sesión en la navegación; verificar que tras cerrar sesión se vuelve a /login y no se ve contenido
   <!-- Completa el flujo de sesión -->
-- [ ] 2.4 Test de componente del login (renderizado y error de credenciales inválidas); verificar que el test corre en local
+- [x] 2.4 Test de componente del login (renderizado y error de credenciales inválidas); verificar que el test corre en local
   <!-- Fija el comportamiento del acceso en un test automatizado -->
 
 ## 3. Catálogo de recetas
 
-- [ ] 3.1 Modelar tipos TypeScript y funciones de acceso a datos para recetas e ingredientes (CRUD contra Supabase); verificar con datos reales insertados desde la app
+- [x] 3.1 Modelar tipos TypeScript y funciones de acceso a datos para recetas e ingredientes (CRUD contra Supabase); verificar con datos reales insertados desde la app
   <!-- Pone la capa de datos del catálogo lista para la UI -->
-- [ ] 3.2 Crear pantalla de listado con tarjeta de receta (nombre, tipo, etiquetas, nº raciones); verificar que una receta creada aparece listada
+- [x] 3.2 Crear pantalla de listado con tarjeta de receta (nombre, tipo, etiquetas, nº raciones); verificar que una receta creada aparece listada
   <!-- Primera vista del catálogo visible al usuario -->
-- [ ] 3.3 Implementar editor de receta: ingredientes dinámicos (añadir/quitar filas con nombre, cantidad, unidad del enum, marca despensa), raciones, instrucciones y guardado con validación de nombre y de al menos un ingrediente; verificar guardado y re-lectura correcta y el caso de error con datos faltantes
+- [x] 3.3 Implementar editor de receta: ingredientes dinámicos (añadir/quitar filas con nombre, cantidad, unidad del enum, marca despensa), raciones, instrucciones y guardado con validación de nombre y de al menos un ingrediente; verificar guardado y re-lectura correcta y el caso de error con datos faltantes
   <!-- CRUD completo de la entidad central -->
 - [ ] 3.4 Añadir filtro por tipo de comida + combinación de etiquetas libres y búsqueda de nombre sin acentos/mayúsculas; verificar los 3 filtros aplicados en serie y que se combinan entre sí
   <!-- Cubre los requisitos de filtrado y búsqueda del catálogo -->

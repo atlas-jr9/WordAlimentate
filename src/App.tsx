@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
+import RecipeEditorPage from './RecipeEditorPage'
+import RecipesPage from './RecipesPage'
 import { supabase } from './lib/supabase'
 
 export default function App() {
@@ -193,14 +195,53 @@ function LoginPage({ onAuthenticated }: { onAuthenticated: (session: Session) =>
 }
 
 function AuthenticatedHome() {
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
+
+  async function handleSignOut() {
+    setSignOutError('')
+    setIsSigningOut(true)
+
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
+      if (error) {
+        console.error('Error al cerrar sesión:', error)
+        setSignOutError(`No se pudo cerrar sesión: ${error.message}`)
+      }
+    } catch (error) {
+      console.error('Error inesperado al cerrar sesión:', error)
+      setSignOutError('No se pudo cerrar sesión. Inténtalo de nuevo.')
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
-      <section className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg shadow-stone-200/70">
-        <h1 className="text-2xl font-semibold text-stone-900">WordAlimentate</h1>
-        <p className="mt-4 text-stone-600" role="status">
-          Sesión iniciada correctamente.
-        </p>
-      </section>
+    <main className="min-h-screen bg-stone-50 px-4 py-8">
+      <div className="mx-auto w-full max-w-5xl">
+        <header className="mb-8 flex items-center justify-between gap-4">
+          <Link className="text-xl font-semibold text-stone-900" to="/">WordAlimentate</Link>
+          <button
+            className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSigningOut}
+            onClick={handleSignOut}
+            type="button"
+          >
+            {isSigningOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
+          </button>
+        </header>
+        {signOutError && (
+          <p className="mb-6 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+            {signOutError}
+          </p>
+        )}
+        <Routes>
+          <Route element={<RecipesPage />} path="/" />
+          <Route element={<RecipeEditorPage />} path="/recipes/new" />
+          <Route element={<RecipeEditorPage />} path="/recipes/:recipeId/edit" />
+          <Route element={<Navigate replace to="/" />} path="*" />
+        </Routes>
+      </div>
     </main>
   )
 }
