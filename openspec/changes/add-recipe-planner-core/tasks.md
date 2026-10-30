@@ -10,7 +10,7 @@
   <!-- Crea el modelo de datos versionado en el repo -->
 - [x] 1.4 Activar RLS en todas las tablas con policies que solo den acceso a usuarios autenticados; verificar con SQL que un anon call no ve filas y el usuario sí
   <!-- Garantiza la privacidad a nivel de base de datos, no de interfaz -->
-- [ ] 1.5 Crear la cuenta única en el panel de Supabase con registro público deshabilitado; verificar que el intento de signup desde API falla
+- [x] 1.5 Crear la cuenta única en el panel de Supabase con registro público deshabilitado; verificar que el intento de signup desde API falla
   <!-- Deja el acceso cerrado a un solo usuario: requisito de private-access -->
 - [ ] 1.6 Conectar el repo a Vercel y desplegar el scaffold vacío; verificar la URL de preview responde
   <!-- Confirma el pipeline de despliegue antes de escribir features -->
