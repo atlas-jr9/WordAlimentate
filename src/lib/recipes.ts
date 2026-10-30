@@ -38,6 +38,12 @@ export interface Recipe {
   tags: string[]
 }
 
+export interface RecipeFilters {
+  foodType?: FoodType | ''
+  tags?: readonly string[]
+  search?: string
+}
+
 export interface RecipeIngredientInput {
   name: string
   quantity: number
@@ -99,6 +105,24 @@ export function mapRecipeRow(row: RecipeRow): Recipe {
       return Array.isArray(tags) ? tags.map(({ name }) => name) : [tags.name]
     }),
   }
+}
+
+function normalizeSearchText(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase()
+}
+
+export function filterRecipes(recipes: Recipe[], filters: RecipeFilters = {}): Recipe[] {
+  const search = normalizeSearchText(filters.search?.trim() ?? '')
+  const tags = (filters.tags ?? []).map(normalizeSearchText)
+
+  return recipes.filter((recipe) => {
+    if (filters.foodType && recipe.foodType !== filters.foodType) return false
+
+    const recipeTags = recipe.tags.map(normalizeSearchText)
+    if (!tags.every((tag) => recipeTags.includes(tag))) return false
+
+    return !search || normalizeSearchText(recipe.name).includes(search)
+  })
 }
 
 function normalizeInput(input: RecipeInput): RecipeInput {

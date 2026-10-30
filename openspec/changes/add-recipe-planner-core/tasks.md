@@ -34,7 +34,7 @@
   <!-- Primera vista del catálogo visible al usuario -->
 - [x] 3.3 Implementar editor de receta: ingredientes dinámicos (añadir/quitar filas con nombre, cantidad, unidad del enum, marca despensa), raciones, instrucciones y guardado con validación de nombre y de al menos un ingrediente; verificar guardado y re-lectura correcta y el caso de error con datos faltantes
   <!-- CRUD completo de la entidad central -->
-- [ ] 3.4 Añadir filtro por tipo de comida + combinación de etiquetas libres y búsqueda de nombre sin acentos/mayúsculas; verificar los 3 filtros aplicados en serie y que se combinan entre sí
+- [x] 3.4 Añadir filtro por tipo de comida + combinación de etiquetas libres y búsqueda de nombre sin acentos/mayúsculas; verificar los 3 filtros aplicados en serie y que se combinan entre sí
   <!-- Cubre los requisitos de filtrado y búsqueda del catálogo -->
 - [ ] 3.5 Implementar eliminación de receta con confirmación y limpieza de ranuras que la referencian; verificar que tras borrar una receta planificada la ranura queda vacía
   <!-- Evita referencias huérfanas en el plan -->

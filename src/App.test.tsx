@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,21 +24,8 @@ const recipeMocks = vi.hoisted(() => ({
 vi.mock('./lib/supabase', () => ({
   supabase: { auth: authMocks },
 }))
-vi.mock('./lib/recipes', () => ({
-  FOOD_TYPES: [
-    { value: 'breakfast', label: 'Desayuno' },
-    { value: 'lunch', label: 'Comida' },
-    { value: 'dinner', label: 'Cena' },
-    { value: 'snack', label: 'Merienda' },
-    { value: 'dessert', label: 'Postre' },
-    { value: 'other', label: 'Otro' },
-  ],
-  INGREDIENT_UNITS: [
-    { value: 'uds', label: 'Unidades' },
-    { value: 'g', label: 'Gramos' },
-    { value: 'ml', label: 'Mililitros' },
-    { value: 'approx', label: 'Aproximado' },
-  ],
+vi.mock('./lib/recipes', async (importOriginal) => ({
+  ...await importOriginal<typeof import('./lib/recipes')>(),
   listRecipes: recipeMocks.listRecipes,
   getRecipe: recipeMocks.getRecipe,
   createRecipe: recipeMocks.createRecipe,
@@ -151,7 +138,11 @@ describe('recipe catalog', () => {
 
     expect(await screen.findByRole('heading', { name: 'Tortilla de patata' })).toBeInTheDocument()
     expect(screen.getByText('Comida · 2 raciones')).toBeInTheDocument()
-    expect(screen.getByText('rápida')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('list', { name: 'Etiquetas de Tortilla de patata' })).getByText(
+        'rápida',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('creates a recipe with its ingredient and returns to the catalog', async () => {
@@ -198,5 +189,40 @@ describe('recipe catalog', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Añade al menos un ingrediente.')
     expect(recipeMocks.createRecipe).not.toHaveBeenCalled()
+  })
+
+  it('combines type, selected tags, and accent-insensitive name search', async () => {
+    const user = userEvent.setup()
+    recipeMocks.listRecipes.mockResolvedValue([
+      {
+        ...recipe,
+        id: 'dinner',
+        name: 'Puré de patata',
+        foodType: 'dinner',
+        tags: ['rápida', 'sin gluten'],
+      },
+      {
+        ...recipe,
+        id: 'lunch',
+        name: 'Tortilla rápida',
+        foodType: 'lunch',
+        tags: ['rápida'],
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Puré de patata' })).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('Tipo de comida'), 'dinner')
+    await user.click(screen.getByLabelText('rápida'))
+    await user.click(screen.getByLabelText('sin gluten'))
+    await user.type(screen.getByLabelText('Buscar por nombre'), 'PURE DE')
+
+    expect(screen.getByRole('heading', { name: 'Puré de patata' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Tortilla rápida' })).not.toBeInTheDocument()
   })
 })

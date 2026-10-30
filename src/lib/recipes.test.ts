@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { mapRecipeRow } from './recipes'
+import { filterRecipes, mapRecipeRow } from './recipes'
+import type { Recipe } from './recipes'
 import type { RecipeRow } from './recipes'
 
 const row: RecipeRow = {
@@ -33,5 +34,48 @@ describe('mapRecipeRow', () => {
     })
 
     expect(mapped.tags).toEqual(['rápida', 'cena'])
+  })
+})
+
+describe('filterRecipes', () => {
+  const recipes: Recipe[] = [
+    {
+      id: 'dinner',
+      name: 'Puré de patata',
+      foodType: 'dinner',
+      servings: 2,
+      instructions: '',
+      createdAt: '',
+      ingredients: [],
+      tags: ['rápida', 'sin gluten'],
+    },
+    {
+      id: 'lunch',
+      name: 'Tortilla rápida',
+      foodType: 'lunch',
+      servings: 2,
+      instructions: '',
+      createdAt: '',
+      ingredients: [],
+      tags: ['rápida'],
+    },
+  ]
+
+  it('combines type, all selected tags, and accent/case-insensitive name search', () => {
+    const filtered = filterRecipes(recipes, {
+      foodType: 'dinner',
+      tags: ['RAPIDA', 'sin gluten'],
+      search: 'PURE DE',
+    })
+
+    expect(filtered.map(({ id }) => id)).toEqual(['dinner'])
+  })
+
+  it('requires every selected tag', () => {
+    const filtered = filterRecipes(recipes, {
+      tags: ['rápida', 'sin gluten'],
+    })
+
+    expect(filtered.map(({ id }) => id)).toEqual(['dinner'])
   })
 })

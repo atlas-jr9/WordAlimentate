@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FOOD_TYPES, listRecipes } from './lib/recipes'
-import type { Recipe } from './lib/recipes'
+import { FOOD_TYPES, filterRecipes, listRecipes } from './lib/recipes'
+import type { FoodType, Recipe } from './lib/recipes'
 
 export default function RecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [foodTypeFilter, setFoodTypeFilter] = useState<FoodType | ''>('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -30,6 +33,15 @@ export default function RecipesPage() {
       isMounted = false
     }
   }, [])
+
+  const availableTags = [...new Set(recipes.flatMap((recipe) => recipe.tags))].sort((a, b) =>
+    a.localeCompare(b),
+  )
+  const filteredRecipes = filterRecipes(recipes, {
+    foodType: foodTypeFilter,
+    tags: selectedTags,
+    search,
+  })
 
   return (
     <section aria-labelledby="recipes-heading" className="w-full max-w-3xl">
@@ -63,8 +75,81 @@ export default function RecipesPage() {
       )}
 
       {!isLoading && !errorMessage && recipes.length > 0 && (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {recipes.map((recipe) => {
+        <div className="space-y-5">
+          <div className="grid gap-4 rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:grid-cols-2">
+            <div>
+              <label
+                className="mb-2 block text-sm font-medium text-stone-700"
+                htmlFor="recipe-search"
+              >
+                Buscar por nombre
+              </label>
+              <input
+                autoComplete="off"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-stone-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20"
+                id="recipe-search"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Ej. tortilla"
+                type="search"
+                value={search}
+              />
+            </div>
+            <div>
+              <label
+                className="mb-2 block text-sm font-medium text-stone-700"
+                htmlFor="recipe-food-type-filter"
+              >
+                Tipo de comida
+              </label>
+              <select
+                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-stone-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20"
+                id="recipe-food-type-filter"
+                onChange={(event) =>
+                  setFoodTypeFilter(event.target.value as FoodType | '')
+                }
+                value={foodTypeFilter}
+              >
+                <option value="">Todos los tipos</option>
+                {FOOD_TYPES.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            {availableTags.length > 0 && (
+              <fieldset className="sm:col-span-2">
+                <legend className="mb-2 text-sm font-medium text-stone-700">
+                  Etiquetas (debe incluir todas)
+                </legend>
+                <div className="flex flex-wrap gap-x-5 gap-y-2">
+                  {availableTags.map((tag) => (
+                    <label className="inline-flex items-center gap-2 text-sm text-stone-700" key={tag}>
+                      <input
+                        checked={selectedTags.includes(tag)}
+                        className="size-4 accent-emerald-800"
+                        onChange={(event) =>
+                          setSelectedTags((current) =>
+                            event.target.checked
+                              ? [...current, tag]
+                              : current.filter((selectedTag) => selectedTag !== tag),
+                          )
+                        }
+                        type="checkbox"
+                      />
+                      {tag}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+          </div>
+
+          {filteredRecipes.length === 0 ? (
+            <p className="rounded-lg bg-white px-5 py-6 text-stone-600 shadow-sm">
+              No hay recetas que coincidan con estos filtros.
+            </p>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {filteredRecipes.map((recipe) => {
             const foodTypeLabel =
               FOOD_TYPES.find(({ value }) => value === recipe.foodType)?.label ?? recipe.foodType
 
@@ -93,8 +178,10 @@ export default function RecipesPage() {
                 </Link>
               </li>
             )
-          })}
-        </ul>
+              })}
+            </ul>
+          )}
+        </div>
       )}
     </section>
   )
