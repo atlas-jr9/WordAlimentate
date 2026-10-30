@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FOOD_TYPES, filterRecipes, listRecipes } from './lib/recipes'
+import { deleteRecipe, FOOD_TYPES, filterRecipes, listRecipes } from './lib/recipes'
 import type { FoodType, Recipe } from './lib/recipes'
 
 export default function RecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [deletingRecipeId, setDeletingRecipeId] = useState('')
   const [foodTypeFilter, setFoodTypeFilter] = useState<FoodType | ''>('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [search, setSearch] = useState('')
@@ -33,6 +35,24 @@ export default function RecipesPage() {
       isMounted = false
     }
   }, [])
+
+  async function handleDelete(recipe: Recipe) {
+    if (!window.confirm(`¿Seguro que quieres eliminar la receta "${recipe.name}"?`)) return
+
+    setDeleteError('')
+    setDeletingRecipeId(recipe.id)
+    try {
+      await deleteRecipe(recipe.id)
+      setRecipes((current) => current.filter(({ id }) => id !== recipe.id))
+    } catch (error) {
+      console.error('Error al eliminar la receta:', error)
+      setDeleteError(
+        error instanceof Error ? error.message : 'No se pudo eliminar la receta.',
+      )
+    } finally {
+      setDeletingRecipeId('')
+    }
+  }
 
   const availableTags = [...new Set(recipes.flatMap((recipe) => recipe.tags))].sort((a, b) =>
     a.localeCompare(b),
@@ -66,6 +86,11 @@ export default function RecipesPage() {
       {errorMessage && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
           {errorMessage}
+        </p>
+      )}
+      {deleteError && (
+        <p className="mb-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          {deleteError}
         </p>
       )}
       {!isLoading && !errorMessage && recipes.length === 0 && (
@@ -150,34 +175,51 @@ export default function RecipesPage() {
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">
               {filteredRecipes.map((recipe) => {
-            const foodTypeLabel =
-              FOOD_TYPES.find(({ value }) => value === recipe.foodType)?.label ?? recipe.foodType
+                const foodTypeLabel =
+                  FOOD_TYPES.find(({ value }) => value === recipe.foodType)?.label ??
+                  recipe.foodType
 
-            return (
-              <li key={recipe.id}>
-                <Link
-                  className="block h-full rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-emerald-700/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-700"
-                  to={`/recipes/${recipe.id}/edit`}
-                >
-                  <h2 className="text-xl font-semibold text-stone-900">{recipe.name}</h2>
-                  <p className="mt-2 text-sm text-stone-600">
-                    {foodTypeLabel} · {recipe.servings} {recipe.servings === 1 ? 'ración' : 'raciones'}
-                  </p>
-                  {recipe.tags.length > 0 && (
-                    <ul aria-label={`Etiquetas de ${recipe.name}`} className="mt-4 flex flex-wrap gap-2">
-                      {recipe.tags.map((tag) => (
-                        <li
-                          className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800"
-                          key={tag}
-                        >
-                          {tag}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Link>
-              </li>
-            )
+                return (
+                  <li key={recipe.id}>
+                    <article className="h-full rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:border-emerald-700/50 hover:shadow-md">
+                      <Link
+                        className="block rounded-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                        to={`/recipes/${recipe.id}/edit`}
+                      >
+                        <h2 className="text-xl font-semibold text-stone-900">{recipe.name}</h2>
+                        <p className="mt-2 text-sm text-stone-600">
+                          {foodTypeLabel} · {recipe.servings}{' '}
+                          {recipe.servings === 1 ? 'ración' : 'raciones'}
+                        </p>
+                        {recipe.tags.length > 0 && (
+                          <ul
+                            aria-label={`Etiquetas de ${recipe.name}`}
+                            className="mt-4 flex flex-wrap gap-2"
+                          >
+                            {recipe.tags.map((tag) => (
+                              <li
+                                className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800"
+                                key={tag}
+                              >
+                                {tag}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </Link>
+                      <button
+                        className="mt-4 rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={deletingRecipeId === recipe.id}
+                        onClick={() => void handleDelete(recipe)}
+                        type="button"
+                      >
+                        {deletingRecipeId === recipe.id
+                          ? 'Eliminando…'
+                          : `Eliminar ${recipe.name}`}
+                      </button>
+                    </article>
+                  </li>
+                )
               })}
             </ul>
           )}

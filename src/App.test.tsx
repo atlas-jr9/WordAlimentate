@@ -19,6 +19,7 @@ const recipeMocks = vi.hoisted(() => ({
   getRecipe: vi.fn(),
   createRecipe: vi.fn(),
   updateRecipe: vi.fn(),
+  deleteRecipe: vi.fn(),
 }))
 
 vi.mock('./lib/supabase', () => ({
@@ -30,11 +31,15 @@ vi.mock('./lib/recipes', async (importOriginal) => ({
   getRecipe: recipeMocks.getRecipe,
   createRecipe: recipeMocks.createRecipe,
   updateRecipe: recipeMocks.updateRecipe,
+  deleteRecipe: recipeMocks.deleteRecipe,
 }))
 
 let authStateListener: ((event: AuthChangeEvent, session: Session | null) => void) | null = null
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -224,5 +229,48 @@ describe('recipe catalog', () => {
 
     expect(screen.getByRole('heading', { name: 'Puré de patata' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Tortilla rápida' })).not.toBeInTheDocument()
+  })
+
+  it('asks for confirmation before deleting a recipe', async () => {
+    const user = userEvent.setup()
+    const confirm = vi.spyOn(window, 'confirm')
+    recipeMocks.listRecipes.mockResolvedValue([recipe])
+    recipeMocks.deleteRecipe.mockResolvedValue(undefined)
+
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: recipe.name })).toBeInTheDocument()
+    confirm.mockReturnValue(false)
+    await user.click(screen.getByRole('button', { name: `Eliminar ${recipe.name}` }))
+    expect(recipeMocks.deleteRecipe).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: recipe.name })).toBeInTheDocument()
+
+    confirm.mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: `Eliminar ${recipe.name}` }))
+    expect(recipeMocks.deleteRecipe).toHaveBeenCalledWith(recipe.id)
+    expect(await screen.findByText('Aún no hay recetas. Añade la primera para empezar tu recetario.'))
+      .toBeInTheDocument()
+  })
+
+  it('keeps the recipe visible and reports errors when deletion fails', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    recipeMocks.listRecipes.mockResolvedValue([recipe])
+    recipeMocks.deleteRecipe.mockRejectedValue(new Error('No se pudo eliminar la receta.'))
+
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: `Eliminar ${recipe.name}` }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar la receta.')
+    expect(screen.getByRole('heading', { name: recipe.name })).toBeInTheDocument()
   })
 })

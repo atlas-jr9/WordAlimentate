@@ -36,7 +36,7 @@
   <!-- CRUD completo de la entidad central -->
 - [x] 3.4 Añadir filtro por tipo de comida + combinación de etiquetas libres y búsqueda de nombre sin acentos/mayúsculas; verificar los 3 filtros aplicados en serie y que se combinan entre sí
   <!-- Cubre los requisitos de filtrado y búsqueda del catálogo -->
-- [ ] 3.5 Implementar eliminación de receta con confirmación y limpieza de ranuras que la referencian; verificar que tras borrar una receta planificada la ranura queda vacía
+- [x] 3.5 Implementar eliminación de receta con confirmación y limpieza de ranuras que la referencian; verificar que tras borrar una receta planificada la ranura queda vacía
   <!-- Evita referencias huérfanas en el plan -->
 - [ ] 3.6 Test de la lógica de filtrado/búsqueda con fixtures de recetas; verificar que el test corre
   <!-- Asegura que los filtros no se rompen en el futuro -->
