@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,6 +24,8 @@ const recipeMocks = vi.hoisted(() => ({
 }))
 const plannerMocks = vi.hoisted(() => ({
   listPlanSlots: vi.fn(),
+  upsertPlanSlot: vi.fn(),
+  clearPlanSlot: vi.fn(),
 }))
 
 vi.mock('./lib/supabase', () => ({
@@ -40,6 +42,8 @@ vi.mock('./lib/recipes', async (importOriginal) => ({
 vi.mock('./lib/planner', async (importOriginal) => ({
   ...await importOriginal<typeof import('./lib/planner')>(),
   listPlanSlots: plannerMocks.listPlanSlots,
+  upsertPlanSlot: plannerMocks.upsertPlanSlot,
+  clearPlanSlot: plannerMocks.clearPlanSlot,
 }))
 
 let authStateListener: ((event: AuthChangeEvent, session: Session | null) => void) | null = null
@@ -55,6 +59,8 @@ beforeEach(() => {
   authMocks.getSession.mockResolvedValue({ data: { session: null }, error: null })
   recipeMocks.listRecipes.mockResolvedValue([])
   plannerMocks.listPlanSlots.mockResolvedValue([])
+  plannerMocks.upsertPlanSlot.mockResolvedValue(undefined)
+  plannerMocks.clearPlanSlot.mockResolvedValue(undefined)
   authMocks.onAuthStateChange.mockImplementation((listener) => {
     authStateListener = listener
     return { data: { subscription: { unsubscribe: vi.fn() } } }
@@ -298,6 +304,28 @@ describe('weekly planner', () => {
     const nextWeekDate = new Date(`${firstWeek}T00:00:00.000Z`)
     nextWeekDate.setUTCDate(nextWeekDate.getUTCDate() + 7)
     const nextWeek = nextWeekDate.toISOString().slice(0, 10)
+    recipeMocks.listRecipes.mockResolvedValue([
+      {
+        id: 'recipe-first',
+        name: 'Menú primera semana',
+        foodType: 'lunch',
+        servings: 2,
+        instructions: '',
+        createdAt: '',
+        ingredients: [],
+        tags: [],
+      },
+      {
+        id: 'recipe-next',
+        name: 'Menú siguiente semana',
+        foodType: 'dinner',
+        servings: 4,
+        instructions: '',
+        createdAt: '',
+        ingredients: [],
+        tags: [],
+      },
+    ])
 
     plannerMocks.listPlanSlots.mockImplementation(async (weekStart: string) => {
       if (weekStart === firstWeek) {
@@ -329,18 +357,139 @@ describe('weekly planner', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText('Menú primera semana')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByLabelText('Receta para Comida del Lunes')).toHaveValue('recipe-first'),
+    )
     expect(screen.getAllByRole('listitem')).toHaveLength(7)
     expect(screen.getAllByText('Comida')).toHaveLength(7)
     expect(screen.getAllByText('Cena')).toHaveLength(7)
 
     await user.click(screen.getByRole('button', { name: 'Semana siguiente' }))
-    expect(await screen.findByText('Menú siguiente semana')).toBeInTheDocument()
-    expect(screen.queryByText('Menú primera semana')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByLabelText('Receta para Cena del Jueves')).toHaveValue('recipe-next'),
+    )
+    expect(screen.getByLabelText('Receta para Comida del Lunes')).toHaveValue('')
     expect(plannerMocks.listPlanSlots).toHaveBeenNthCalledWith(1, firstWeek)
     expect(plannerMocks.listPlanSlots).toHaveBeenNthCalledWith(2, nextWeek)
 
     await user.click(screen.getByRole('button', { name: 'Hoy' }))
-    expect(await screen.findByText('Menú primera semana')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByLabelText('Receta para Comida del Lunes')).toHaveValue('recipe-first'),
+    )
+  })
+
+  it('assigns the same recipe to multiple slots and clears only the selected slot', async () => {
+    const user = userEvent.setup()
+    const weekStart = getWeekStart()
+    const testRecipe = {
+      id: 'recipe-shared',
+      name: 'Guiso de prueba',
+      foodType: 'dinner',
+      servings: 2,
+      instructions: '',
+      createdAt: '',
+      ingredients: [],
+      tags: [],
+    }
+    const savedSlots: Array<{
+      id: string
+      weekStart: string
+      dayOfWeek: number
+      slot: 'lunch' | 'dinner'
+      recipeId: string
+      recipe: {
+        id: string
+        name: string
+        foodType: string
+        servings: number
+      }
+    }> = []
+    recipeMocks.listRecipes.mockResolvedValue([testRecipe])
+    plannerMocks.listPlanSlots.mockImplementation(async (requestedWeek: string) =>
+      savedSlots.filter(({ weekStart: slotWeek }) => slotWeek === requestedWeek),
+    )
+    plannerMocks.upsertPlanSlot.mockImplementation(async (input: {
+      weekStart: string
+      dayOfWeek: number
+      slot: 'lunch' | 'dinner'
+      recipeId: string
+    }) => {
+      const recipe = testRecipe
+      const existing = savedSlots.find(
+        (saved) =>
+          saved.weekStart === input.weekStart &&
+          saved.dayOfWeek === input.dayOfWeek &&
+          saved.slot === input.slot,
+      )
+      const newSlot = {
+        id: existing?.id ?? `${input.dayOfWeek}-${input.slot}`,
+        weekStart: input.weekStart,
+        dayOfWeek: input.dayOfWeek,
+        slot: input.slot,
+        recipeId: input.recipeId,
+        recipe: {
+          id: recipe.id,
+          name: recipe.name,
+          foodType: recipe.foodType,
+          servings: recipe.servings,
+        },
+      }
+      if (existing) {
+        savedSlots[savedSlots.indexOf(existing)] = newSlot
+      } else {
+        savedSlots.push(newSlot)
+      }
+      return newSlot
+    })
+    plannerMocks.clearPlanSlot.mockImplementation(async (input: {
+      weekStart: string
+      dayOfWeek: number
+      slot: 'lunch' | 'dinner'
+    }) => {
+      const index = savedSlots.findIndex(
+        (saved) =>
+          saved.weekStart === input.weekStart &&
+          saved.dayOfWeek === input.dayOfWeek &&
+          saved.slot === input.slot,
+      )
+      if (index >= 0) savedSlots.splice(index, 1)
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/plan']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    const mondayLunch = await screen.findByLabelText('Receta para Comida del Lunes')
+    await user.selectOptions(mondayLunch, testRecipe.id)
+    const thursdayDinner = screen.getByLabelText('Receta para Cena del Jueves')
+    await user.selectOptions(thursdayDinner, testRecipe.id)
+
+    expect(await screen.findAllByRole('combobox', { name: /Receta para/ })).toHaveLength(14)
+    expect(screen.getByLabelText('Receta para Comida del Lunes')).toHaveValue(testRecipe.id)
+    expect(screen.getByLabelText('Receta para Cena del Jueves')).toHaveValue(testRecipe.id)
+    expect(plannerMocks.upsertPlanSlot).toHaveBeenNthCalledWith(1, {
+      weekStart,
+      dayOfWeek: 0,
+      slot: 'lunch',
+      recipeId: testRecipe.id,
+    })
+    expect(plannerMocks.upsertPlanSlot).toHaveBeenNthCalledWith(2, {
+      weekStart,
+      dayOfWeek: 3,
+      slot: 'dinner',
+      recipeId: testRecipe.id,
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Vaciar comida del Lunes' }))
+
+    expect(plannerMocks.clearPlanSlot).toHaveBeenCalledWith({
+      weekStart,
+      dayOfWeek: 0,
+      slot: 'lunch',
+    })
+    expect(screen.getByLabelText('Receta para Comida del Lunes')).toHaveValue('')
+    expect(screen.getByLabelText('Receta para Cena del Jueves')).toHaveValue(testRecipe.id)
   })
 })

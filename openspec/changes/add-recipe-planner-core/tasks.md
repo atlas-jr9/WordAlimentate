@@ -47,7 +47,7 @@
   <!-- Capa de datos del planner sobre semanas reales -->
 - [x] 4.2 Implementar vista semanal 7 días × 2 ranuras (comida/cena) con navegación entre semanas (anterior/siguiente/hoy); verificar que las semanas muestran planes distintos
   <!-- La cuadrícula del planificador y su requisito de semanas con fecha -->
-- [ ] 4.3 Implementar selector de receta por ranura: elegir desde el catálogo, asignar la misma receta dos veces y vaciar la ranura; verificar que la vista refleja siempre el estado de la base de datos
+- [x] 4.3 Implementar selector de receta por ranura: elegir desde el catálogo, asignar la misma receta dos veces y vaciar la ranura; verificar que la vista refleja siempre el estado de la base de datos
   <!-- Cubre "assign and remove recipes" -->
 - [ ] 4.4 Layout responsive del planificador: tarjeta de día en móvil en columna y tabla amplia en escritorio; verificar en viewport de 375 px y 1440 px
   <!-- Requisito responsive en la vista más gráfica -->

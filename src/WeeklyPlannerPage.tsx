@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { getWeekStart, listPlanSlots } from './lib/planner'
+import { getWeekStart, listPlanSlots, upsertPlanSlot, clearPlanSlot } from './lib/planner'
 import type { PlanMealSlot, PlanSlot } from './lib/planner'
+import { listRecipes } from './lib/recipes'
+import type { Recipe } from './lib/recipes'
 
 const DAYS_OF_WEEK = Array.from({ length: 7 }, (_, dayOfWeek) => dayOfWeek)
 const MEAL_SLOTS: Array<{ value: PlanMealSlot; label: string }> = [
@@ -42,8 +44,12 @@ function formatDay(weekStart: string, dayOfWeek: number) {
 export default function WeeklyPlannerPage() {
   const [weekStart, setWeekStart] = useState(() => getWeekStart())
   const [slots, setSlots] = useState<PlanSlot[]>([])
+  const [recipes, setRecipes] = useState<Recipe[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(true)
+  const [updatingSlotKey, setUpdatingSlotKey] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [slotError, setSlotError] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -71,8 +77,76 @@ export default function WeeklyPlannerPage() {
     }
   }, [weekStart])
 
+  useEffect(() => {
+    let isMounted = true
+
+    listRecipes()
+      .then((loadedRecipes) => {
+        if (isMounted) setRecipes(loadedRecipes)
+      })
+      .catch((error: unknown) => {
+        if (!isMounted) return
+        console.error('Error al cargar las recetas para el plan:', error)
+        setErrorMessage(
+          error instanceof Error ? error.message : 'No se pudieron cargar las recetas.',
+        )
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingRecipes(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   function getSlot(dayOfWeek: number, slot: PlanMealSlot) {
     return slots.find((planSlot) => planSlot.dayOfWeek === dayOfWeek && planSlot.slot === slot)
+  }
+
+  async function refreshWeek() {
+    const refreshedSlots = await listPlanSlots(weekStart)
+    setSlots(refreshedSlots)
+  }
+
+  async function handleRecipeChange(
+    dayOfWeek: number,
+    slot: PlanMealSlot,
+    recipeId: string,
+  ) {
+    if (!recipeId) return
+
+    const key = `${dayOfWeek}-${slot}`
+    setUpdatingSlotKey(key)
+    setSlotError('')
+
+    try {
+      await upsertPlanSlot({ weekStart, dayOfWeek, slot, recipeId })
+      await refreshWeek()
+    } catch (error) {
+      console.error('Error al asignar la receta a la ranura:', error)
+      setSlotError(
+        error instanceof Error ? error.message : 'No se pudo asignar la receta.',
+      )
+    } finally {
+      setUpdatingSlotKey('')
+    }
+  }
+
+  async function handleClearSlot(dayOfWeek: number, slot: PlanMealSlot) {
+    const key = `${dayOfWeek}-${slot}`
+    setUpdatingSlotKey(key)
+    setSlotError('')
+
+    try {
+      await clearPlanSlot({ weekStart, dayOfWeek, slot })
+      await refreshWeek()
+    } catch (error) {
+      console.error('Error al vaciar la ranura del plan:', error)
+      setSlotError(error instanceof Error ? error.message : 'No se pudo vaciar la ranura.')
+    } finally {
+      setUpdatingSlotKey('')
+    }
   }
 
   return (
@@ -91,6 +165,7 @@ export default function WeeklyPlannerPage() {
           <button
             aria-label="Semana anterior"
             className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+            disabled={Boolean(updatingSlotKey)}
             onClick={() => setWeekStart((current) => addWeeks(current, -1))}
             type="button"
           >
@@ -98,6 +173,7 @@ export default function WeeklyPlannerPage() {
           </button>
           <button
             className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+            disabled={Boolean(updatingSlotKey)}
             onClick={() => setWeekStart(getWeekStart())}
             type="button"
           >
@@ -106,6 +182,7 @@ export default function WeeklyPlannerPage() {
           <button
             aria-label="Semana siguiente"
             className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+            disabled={Boolean(updatingSlotKey)}
             onClick={() => setWeekStart((current) => addWeeks(current, 1))}
             type="button"
           >
@@ -118,6 +195,11 @@ export default function WeeklyPlannerPage() {
       {errorMessage && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
           {errorMessage}
+        </p>
+      )}
+      {slotError && (
+        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          {slotError}
         </p>
       )}
 
@@ -144,8 +226,35 @@ export default function WeeklyPlannerPage() {
                         <dt className="text-xs font-semibold uppercase tracking-wide text-stone-500">
                           {label}
                         </dt>
-                        <dd className="mt-1 text-sm text-stone-800">
-                          {planSlot?.recipe?.name ?? 'Sin receta'}
+                        <dd className="mt-2 space-y-2">
+                          <select
+                            aria-label={`Receta para ${label} del ${day.weekday}`}
+                            className="w-full rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-sm text-stone-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={isLoadingRecipes || Boolean(updatingSlotKey)}
+                            onChange={(event) =>
+                              void handleRecipeChange(dayOfWeek, value, event.target.value)
+                            }
+                            value={planSlot?.recipeId ?? ''}
+                          >
+                            <option value="">
+                              {isLoadingRecipes ? 'Cargando recetas…' : 'Sin receta'}
+                            </option>
+                            {recipes.map((recipe) => (
+                              <option key={recipe.id} value={recipe.id}>
+                                {recipe.name}
+                              </option>
+                            ))}
+                          </select>
+                          {planSlot?.recipeId && (
+                            <button
+                              className="text-xs font-medium text-red-700 underline decoration-red-300 underline-offset-2 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={Boolean(updatingSlotKey)}
+                              onClick={() => void handleClearSlot(dayOfWeek, value)}
+                              type="button"
+                            >
+                              Vaciar {label.toLocaleLowerCase()} del {day.weekday}
+                            </button>
+                          )}
                         </dd>
                       </div>
                     )
