@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { MemoryRouter } from 'react-router-dom'
 import { getWeekStart } from './lib/planner'
+import type { ShoppingListItem, ShoppingListItemInput } from './lib/shopping-list-data'
 import App from './App'
 
 const authMocks = vi.hoisted(() => ({
@@ -27,6 +28,11 @@ const plannerMocks = vi.hoisted(() => ({
   upsertPlanSlot: vi.fn(),
   clearPlanSlot: vi.fn(),
 }))
+const shoppingListMocks = vi.hoisted(() => ({
+  listShoppingListItems: vi.fn(),
+  upsertShoppingListItem: vi.fn(),
+  deleteManualShoppingListItem: vi.fn(),
+}))
 
 vi.mock('./lib/supabase', () => ({
   supabase: { auth: authMocks },
@@ -45,6 +51,12 @@ vi.mock('./lib/planner', async (importOriginal) => ({
   upsertPlanSlot: plannerMocks.upsertPlanSlot,
   clearPlanSlot: plannerMocks.clearPlanSlot,
 }))
+vi.mock('./lib/shopping-list-data', async (importOriginal) => ({
+  ...await importOriginal<typeof import('./lib/shopping-list-data')>(),
+  listShoppingListItems: shoppingListMocks.listShoppingListItems,
+  upsertShoppingListItem: shoppingListMocks.upsertShoppingListItem,
+  deleteManualShoppingListItem: shoppingListMocks.deleteManualShoppingListItem,
+}))
 
 let authStateListener: ((event: AuthChangeEvent, session: Session | null) => void) | null = null
 
@@ -61,6 +73,9 @@ beforeEach(() => {
   plannerMocks.listPlanSlots.mockResolvedValue([])
   plannerMocks.upsertPlanSlot.mockResolvedValue(undefined)
   plannerMocks.clearPlanSlot.mockResolvedValue(undefined)
+  shoppingListMocks.listShoppingListItems.mockResolvedValue([])
+  shoppingListMocks.upsertShoppingListItem.mockResolvedValue(undefined)
+  shoppingListMocks.deleteManualShoppingListItem.mockResolvedValue(undefined)
   authMocks.onAuthStateChange.mockImplementation((listener) => {
     authStateListener = listener
     return { data: { subscription: { unsubscribe: vi.fn() } } }
@@ -295,6 +310,86 @@ describe('weekly planner', () => {
     authMocks.getSession.mockResolvedValue({
       data: { session: { user: { id: 'user-id' } } },
       error: null,
+    })
+  })
+
+  describe('shopping list', () => {
+    beforeEach(() => {
+      authMocks.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'user-id' } } },
+        error: null,
+      })
+    })
+
+    it('adds manual items, persists checking and unchecking, and removes manual items', async () => {
+      const user = userEvent.setup()
+      const weekStart = getWeekStart()
+      let items: ShoppingListItem[] = [{
+        id: 'generated-1',
+        weekStart,
+        name: 'Arroz',
+        quantity: 500,
+        unit: 'g' as const,
+        manual: false,
+        checked: false,
+      }]
+      shoppingListMocks.listShoppingListItems.mockImplementation(async () => items)
+      shoppingListMocks.upsertShoppingListItem.mockImplementation(async (input: ShoppingListItemInput) => {
+        const current = items.find((item) => item.name === input.name && item.unit === input.unit)
+        const saved = { ...input, id: current?.id ?? 'manual-1' }
+        items = current
+          ? items.map((item) => item.id === current.id ? saved : item)
+          : [...items, saved]
+        return saved
+      })
+      shoppingListMocks.deleteManualShoppingListItem.mockImplementation(async (
+        _requestedWeek: string,
+        itemId: string,
+      ) => {
+        items = items.filter((item) => item.id !== itemId)
+      })
+
+      render(
+        <MemoryRouter initialEntries={['/shopping-list']}>
+          <App />
+        </MemoryRouter>,
+      )
+
+      expect(await screen.findByText('500 gramos')).toBeInTheDocument()
+      await user.click(screen.getByRole('checkbox', { name: 'Marcar Arroz como comprado' }))
+      await waitFor(() => expect(items[0].checked).toBe(true))
+      expect(shoppingListMocks.upsertShoppingListItem).toHaveBeenCalledWith({
+        weekStart,
+        name: 'Arroz',
+        quantity: 500,
+        unit: 'g',
+        manual: false,
+        checked: true,
+      })
+
+      await user.click(screen.getByRole('checkbox', { name: 'Marcar Arroz como comprado' }))
+      await waitFor(() => expect(items[0].checked).toBe(false))
+
+      await user.type(screen.getByLabelText('Artículo'), 'Papel de cocina')
+      await user.click(screen.getByRole('button', { name: 'Añadir' }))
+      expect(await screen.findByText('Manual')).toBeInTheDocument()
+      expect(screen.getByText('Papel de cocina')).toBeInTheDocument()
+      expect(shoppingListMocks.upsertShoppingListItem).toHaveBeenLastCalledWith({
+        weekStart,
+        name: 'Papel de cocina',
+        quantity: null,
+        unit: null,
+        manual: true,
+        checked: false,
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Eliminar Papel de cocina' }))
+      await waitFor(() => expect(items).toHaveLength(1))
+      expect(screen.queryByText('Papel de cocina')).not.toBeInTheDocument()
+      expect(shoppingListMocks.deleteManualShoppingListItem).toHaveBeenCalledWith(
+        weekStart,
+        'manual-1',
+      )
     })
   })
 

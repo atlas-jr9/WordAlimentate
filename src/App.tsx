@@ -4,6 +4,7 @@ import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import RecipeEditorPage from './RecipeEditorPage'
 import RecipesPage from './RecipesPage'
+import ShoppingListPage from './ShoppingListPage'
 import WeeklyPlannerPage from './WeeklyPlannerPage'
 import { supabase } from './lib/supabase'
 
@@ -223,7 +224,7 @@ function AuthenticatedHome() {
       <div className={`mx-auto w-full ${pathname === '/plan' ? 'max-w-7xl' : 'max-w-5xl'}`}>
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Link className="text-xl font-semibold text-stone-900" to="/">WordAlimentate</Link>
-          <nav aria-label="Navegación principal" className="flex items-center gap-4">
+          <nav aria-label="Navegación principal" className="flex flex-wrap items-center gap-4">
             <Link
               className="text-sm font-medium text-stone-700 hover:text-emerald-800"
               to="/"
@@ -235,6 +236,12 @@ function AuthenticatedHome() {
               to="/plan"
             >
               Plan semanal
+            </Link>
+            <Link
+              className="text-sm font-medium text-stone-700 hover:text-emerald-800"
+              to="/shopping-list"
+            >
+              Compra
             </Link>
             <button
               className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
@@ -256,6 +263,7 @@ function AuthenticatedHome() {
           <Route element={<RecipeEditorPage />} path="/recipes/new" />
           <Route element={<RecipeEditorPage />} path="/recipes/:recipeId/edit" />
           <Route element={<WeeklyPlannerPage />} path="/plan" />
+          <Route element={<ShoppingListPage />} path="/shopping-list" />
           <Route element={<Navigate replace to="/" />} path="*" />
         </Routes>
       </div>
