@@ -60,7 +60,7 @@
   <!-- Requisitos de check-off persistente -->
 - [x] 5.3 Implementar vista de lista: ítems con checkbox de comprado y cantidad+unidad, ítems manuales visibles como tal y opción de añadirlos/quitarlos; verificar añadir, marcar, desmarcar y borrar un manual
   <!-- La UI de compra con su gestión interactiva -->
-- [ ] 5.4 Enlazar lista y plan: al abrir la lista se reconstruye desde el plan actual y refresca tras cambios del plan; verificar que asignar/retirar receta cambia la lista en la siguiente consulta
+- [x] 5.4 Enlazar lista y plan: al abrir la lista se reconstruye desde el plan actual y refresca tras cambios del plan; verificar que asignar/retirar receta cambia la lista en la siguiente consulta
   <!-- "La lista sigue al plan" -->
 - [ ] 5.5 Layout móvil-first de la lista como vista primaria, con checkbox de un solo pulgar y navegación accesible; verificar el uso en 375 px y que la navegación no desplaza la lista
   <!-- Requisito "mobile-first list view" -->

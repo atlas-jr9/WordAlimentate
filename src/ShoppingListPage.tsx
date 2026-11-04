@@ -1,14 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { getWeekStart } from './lib/planner'
-import { INGREDIENT_UNITS } from './lib/recipes'
+import { getWeekStart, listPlanSlots } from './lib/planner'
+import { INGREDIENT_UNITS, listRecipes } from './lib/recipes'
 import type { IngredientUnit } from './lib/recipes'
+import { generateShoppingList } from './lib/shopping-list'
 import {
   deleteManualShoppingListItem,
   listShoppingListItems,
   upsertShoppingListItem,
 } from './lib/shopping-list-data'
 import type { ShoppingListItem } from './lib/shopping-list-data'
+
+function getIngredientKey(name: string, unit: IngredientUnit) {
+  return `${name.toLowerCase()}\0${unit}`
+}
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
@@ -25,15 +30,53 @@ export default function ShoppingListPage() {
   const [unit, setUnit] = useState<IngredientUnit | ''>('')
   const [errorMessage, setErrorMessage] = useState('')
 
+  const loadItems = useCallback(async (): Promise<ShoppingListItem[]> => {
+    const [planSlots, recipes, savedItems] = await Promise.all([
+      listPlanSlots(weekStart),
+      listRecipes(),
+      listShoppingListItems(weekStart),
+    ])
+    const recipesById = new Map(recipes.map((recipe) => [recipe.id, recipe]))
+    const generatedItems = generateShoppingList(
+      planSlots.map((slot) => ({
+        recipe: slot.recipeId ? recipesById.get(slot.recipeId) ?? null : null,
+      })),
+    )
+    const savedGeneratedItems = new Map(
+      savedItems
+        .filter(
+          (item): item is ShoppingListItem & { unit: IngredientUnit } =>
+            !item.manual && item.unit !== null,
+        )
+        .map((item) => [getIngredientKey(item.name, item.unit), item]),
+    )
+    const generatedShoppingItems: ShoppingListItem[] = generatedItems.map((item) => {
+      const savedItem = savedGeneratedItems.get(getIngredientKey(item.name, item.unit))
+      return {
+        id: savedItem?.id ?? `generated-${getIngredientKey(item.name, item.unit)}`,
+        weekStart,
+        name: savedItem?.name ?? item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        manual: false,
+        checked: savedItem?.checked ?? false,
+      }
+    })
+
+    return [
+      ...generatedShoppingItems,
+      ...savedItems.filter((item) => item.manual),
+    ]
+  }, [weekStart])
+
   async function refreshItems() {
-    const loadedItems = await listShoppingListItems(weekStart)
-    setItems(loadedItems)
+    setItems(await loadItems())
   }
 
   useEffect(() => {
     let isMounted = true
 
-    listShoppingListItems(weekStart)
+    loadItems()
       .then((loadedItems) => {
         if (isMounted) setItems(loadedItems)
       })
@@ -49,7 +92,7 @@ export default function ShoppingListPage() {
     return () => {
       isMounted = false
     }
-  }, [weekStart])
+  }, [loadItems])
 
   async function handleAddItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
