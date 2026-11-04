@@ -204,66 +204,94 @@ export default function WeeklyPlannerPage() {
       )}
 
       {!isLoading && !errorMessage && (
-        <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {DAYS_OF_WEEK.map((dayOfWeek) => {
-            const day = formatDay(weekStart, dayOfWeek)
+        <div className="overflow-x-auto">
+          <table
+            aria-label="Plan semanal"
+            className="w-full border-separate border-spacing-y-3 text-left lg:border-spacing-y-0"
+          >
+            <caption className="sr-only">Plan de comidas de la semana</caption>
+            <thead className="hidden lg:table-header-group">
+              <tr>
+                <th className="w-44 px-4 pb-3 text-sm font-semibold text-stone-600" scope="col">
+                  Día
+                </th>
+                {MEAL_SLOTS.map(({ value, label }) => (
+                  <th className="px-4 pb-3 text-sm font-semibold text-stone-600" key={value} scope="col">
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="block space-y-3 lg:table-row-group lg:space-y-0">
+              {DAYS_OF_WEEK.map((dayOfWeek) => {
+                const day = formatDay(weekStart, dayOfWeek)
 
-            return (
-              <li
-                className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm"
-                key={`${weekStart}-${dayOfWeek}`}
-              >
-                <h2 className="border-b border-stone-100 pb-3 font-semibold text-stone-900">
-                  {day.weekday}
-                  <span className="ml-2 text-sm font-normal text-stone-500">{day.shortDate}</span>
-                </h2>
-                <dl className="mt-3 space-y-3">
-                  {MEAL_SLOTS.map(({ value, label }) => {
-                    const planSlot = getSlot(dayOfWeek, value)
+                return (
+                  <tr
+                    className="block overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm lg:table-row lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none"
+                    key={`${weekStart}-${dayOfWeek}`}
+                  >
+                    <th
+                      className="block border-b border-stone-100 px-4 py-3 text-left font-semibold text-stone-900 lg:table-cell lg:w-44 lg:rounded-l-xl lg:border lg:bg-white"
+                      scope="row"
+                    >
+                      {day.weekday}
+                      <span className="ml-2 text-sm font-normal text-stone-500">{day.shortDate}</span>
+                    </th>
+                    {MEAL_SLOTS.map(({ value, label }) => {
+                      const planSlot = getSlot(dayOfWeek, value)
 
-                    return (
-                      <div className="rounded-lg bg-stone-50 p-3" key={value}>
-                        <dt className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-                          {label}
-                        </dt>
-                        <dd className="mt-2 space-y-2">
-                          <select
-                            aria-label={`Receta para ${label} del ${day.weekday}`}
-                            className="w-full rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-sm text-stone-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={isLoadingRecipes || Boolean(updatingSlotKey)}
-                            onChange={(event) =>
-                              void handleRecipeChange(dayOfWeek, value, event.target.value)
-                            }
-                            value={planSlot?.recipeId ?? ''}
+                      return (
+                        <td
+                          className="block px-4 py-3 lg:table-cell lg:border-y lg:border-stone-200 lg:bg-white"
+                          key={value}
+                        >
+                          <label
+                            className="mb-2 block text-xs font-semibold uppercase tracking-wide text-stone-500 lg:sr-only"
+                            htmlFor={`slot-${dayOfWeek}-${value}`}
                           >
-                            <option value="">
-                              {isLoadingRecipes ? 'Cargando recetas…' : 'Sin receta'}
-                            </option>
-                            {recipes.map((recipe) => (
-                              <option key={recipe.id} value={recipe.id}>
-                                {recipe.name}
-                              </option>
-                            ))}
-                          </select>
-                          {planSlot?.recipeId && (
-                            <button
-                              className="text-xs font-medium text-red-700 underline decoration-red-300 underline-offset-2 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-                              disabled={Boolean(updatingSlotKey)}
-                              onClick={() => void handleClearSlot(dayOfWeek, value)}
-                              type="button"
+                            {label}
+                          </label>
+                          <div className="space-y-2">
+                            <select
+                              aria-label={`Receta para ${label} del ${day.weekday}`}
+                              className="w-full rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-sm text-stone-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={isLoadingRecipes || Boolean(updatingSlotKey)}
+                              id={`slot-${dayOfWeek}-${value}`}
+                              onChange={(event) =>
+                                void handleRecipeChange(dayOfWeek, value, event.target.value)
+                              }
+                              value={planSlot?.recipeId ?? ''}
                             >
-                              Vaciar {label.toLocaleLowerCase()} del {day.weekday}
-                            </button>
-                          )}
-                        </dd>
-                      </div>
-                    )
-                  })}
-                </dl>
-              </li>
-            )
-          })}
-        </ol>
+                              <option value="">
+                                {isLoadingRecipes ? 'Cargando recetas…' : 'Sin receta'}
+                              </option>
+                              {recipes.map((recipe) => (
+                                <option key={recipe.id} value={recipe.id}>
+                                  {recipe.name}
+                                </option>
+                              ))}
+                            </select>
+                            {planSlot?.recipeId && (
+                              <button
+                                className="text-xs font-medium text-red-700 underline decoration-red-300 underline-offset-2 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={Boolean(updatingSlotKey)}
+                                onClick={() => void handleClearSlot(dayOfWeek, value)}
+                                type="button"
+                              >
+                                Vaciar {label.toLocaleLowerCase()} del {day.weekday}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )

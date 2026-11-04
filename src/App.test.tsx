@@ -360,9 +360,9 @@ describe('weekly planner', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('Receta para Comida del Lunes')).toHaveValue('recipe-first'),
     )
-    expect(screen.getAllByRole('listitem')).toHaveLength(7)
-    expect(screen.getAllByText('Comida')).toHaveLength(7)
-    expect(screen.getAllByText('Cena')).toHaveLength(7)
+    const plannerTable = screen.getByRole('table', { name: 'Plan semanal' })
+    expect(within(plannerTable).getAllByRole('row')).toHaveLength(8)
+    expect(within(plannerTable).getAllByRole('combobox')).toHaveLength(14)
 
     await user.click(screen.getByRole('button', { name: 'Semana siguiente' }))
     await waitFor(() =>

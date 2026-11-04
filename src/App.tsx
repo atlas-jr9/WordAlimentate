@@ -196,6 +196,7 @@ function LoginPage({ onAuthenticated }: { onAuthenticated: (session: Session) =>
 }
 
 function AuthenticatedHome() {
+  const { pathname } = useLocation()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
 
@@ -219,7 +220,7 @@ function AuthenticatedHome() {
 
   return (
     <main className="min-h-screen bg-stone-50 px-4 py-8">
-      <div className="mx-auto w-full max-w-5xl">
+      <div className={`mx-auto w-full ${pathname === '/plan' ? 'max-w-7xl' : 'max-w-5xl'}`}>
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Link className="text-xl font-semibold text-stone-900" to="/">WordAlimentate</Link>
           <nav aria-label="Navegación principal" className="flex items-center gap-4">
