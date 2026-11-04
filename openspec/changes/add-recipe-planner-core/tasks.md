@@ -54,7 +54,7 @@
 
 ## 5. Lista de la compra
 
-- [ ] 5.1 Implementar función pura de generación: agrega por `(lower(name), unit)` del plan activo, escala según raciones registradas y excluye despensa; verificar con tabla de casos: 2+3 uds → 5, arroz g vs lata → 2 líneas, receta doble duplica, el ingrediente de despensa no aparece
+- [x] 5.1 Implementar función pura de generación: agrega por `(lower(name), unit)` del plan activo, escala según raciones registradas y excluye despensa; verificar con tabla de casos: 2+3 uds → 5, arroz g vs lata → 2 líneas, receta doble duplica, el ingrediente de despensa no aparece
   <!-- El núcleo de agregación, testeado sin UI -->
 - [ ] 5.2 Persistir estado `checked` e ítems manuales en `shopping_list_items` por `(week_start, name, unit)`; verificar que recargar y cambiar de dispositivo mantiene la marca de comprado
   <!-- Requisitos de check-off persistente -->
