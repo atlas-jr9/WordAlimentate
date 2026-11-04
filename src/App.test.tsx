@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { MemoryRouter } from 'react-router-dom'
 import { getWeekStart } from './lib/planner'
+import type { PlanSlot, PlanSlotInput } from './lib/planner'
+import type { Recipe } from './lib/recipes'
 import type { ShoppingListItem, ShoppingListItemInput } from './lib/shopping-list-data'
 import App from './App'
 
@@ -324,6 +326,22 @@ describe('weekly planner', () => {
     it('adds manual items, persists checking and unchecking, and removes manual items', async () => {
       const user = userEvent.setup()
       const weekStart = getWeekStart()
+      const arrozRecipe: Recipe = {
+        id: 'recipe-arroz',
+        name: 'Arroz de prueba',
+        foodType: 'lunch',
+        servings: 2,
+        instructions: '',
+        createdAt: '',
+        ingredients: [{
+          id: 'ingredient-arroz',
+          name: 'Arroz',
+          quantity: 500,
+          unit: 'g',
+          pantry: false,
+        }],
+        tags: [],
+      }
       let items: ShoppingListItem[] = [{
         id: 'generated-1',
         weekStart,
@@ -333,6 +351,20 @@ describe('weekly planner', () => {
         manual: false,
         checked: false,
       }]
+      recipeMocks.listRecipes.mockResolvedValue([arrozRecipe])
+      plannerMocks.listPlanSlots.mockResolvedValue([{
+        id: 'slot-arroz',
+        weekStart,
+        dayOfWeek: 0,
+        slot: 'lunch',
+        recipeId: arrozRecipe.id,
+        recipe: {
+          id: arrozRecipe.id,
+          name: arrozRecipe.name,
+          foodType: arrozRecipe.foodType,
+          servings: arrozRecipe.servings,
+        },
+      }])
       shoppingListMocks.listShoppingListItems.mockImplementation(async () => items)
       shoppingListMocks.upsertShoppingListItem.mockImplementation(async (input: ShoppingListItemInput) => {
         const current = items.find((item) => item.name === input.name && item.unit === input.unit)
@@ -390,6 +422,87 @@ describe('weekly planner', () => {
         weekStart,
         'manual-1',
       )
+    })
+
+    it('rebuilds the list from the current plan when revisiting the shopping list', async () => {
+      const user = userEvent.setup()
+      const weekStart = getWeekStart()
+      const testRecipe: Recipe = {
+        id: 'recipe-for-shopping-list',
+        name: 'Sopa de prueba',
+        foodType: 'dinner',
+        servings: 2,
+        instructions: '',
+        createdAt: '',
+        ingredients: [{
+          id: 'ingredient-tomatoes',
+          name: 'Tomates',
+          quantity: 3,
+          unit: 'uds',
+          pantry: false,
+        }],
+        tags: [],
+      }
+      let savedSlots: PlanSlot[] = []
+      recipeMocks.listRecipes.mockResolvedValue([testRecipe])
+      plannerMocks.listPlanSlots.mockImplementation(async (requestedWeek: string) =>
+        savedSlots.filter((slot) => slot.weekStart === requestedWeek),
+      )
+      plannerMocks.upsertPlanSlot.mockImplementation(async (input: PlanSlotInput) => {
+        const savedSlot: PlanSlot = {
+          id: 'slot-for-shopping-list',
+          ...input,
+          recipe: {
+            id: testRecipe.id,
+            name: testRecipe.name,
+            foodType: testRecipe.foodType,
+            servings: testRecipe.servings,
+          },
+        }
+        savedSlots = [...savedSlots.filter(
+          (slot) =>
+            slot.weekStart !== input.weekStart ||
+            slot.dayOfWeek !== input.dayOfWeek ||
+            slot.slot !== input.slot,
+        ), savedSlot]
+        return savedSlot
+      })
+      plannerMocks.clearPlanSlot.mockImplementation(async (input: {
+        weekStart: string
+        dayOfWeek: number
+        slot: 'lunch' | 'dinner'
+      }) => {
+        savedSlots = savedSlots.filter(
+          (slot) =>
+            slot.weekStart !== input.weekStart ||
+            slot.dayOfWeek !== input.dayOfWeek ||
+            slot.slot !== input.slot,
+        )
+      })
+
+      render(
+        <MemoryRouter initialEntries={['/shopping-list']}>
+          <App />
+        </MemoryRouter>,
+      )
+
+      expect(await screen.findByText('Aún no hay artículos en esta lista.')).toBeInTheDocument()
+      expect(plannerMocks.listPlanSlots).toHaveBeenCalledWith(weekStart)
+      await user.click(screen.getByRole('link', { name: 'Plan semanal' }))
+      await user.selectOptions(
+        await screen.findByLabelText('Receta para Comida del Lunes'),
+        testRecipe.id,
+      )
+
+      await user.click(screen.getByRole('link', { name: 'Compra' }))
+      expect(await screen.findByText('Tomates')).toBeInTheDocument()
+      expect(screen.getByText('3 unidades')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('link', { name: 'Plan semanal' }))
+      await user.click(await screen.findByRole('button', { name: 'Vaciar comida del Lunes' }))
+      await user.click(screen.getByRole('link', { name: 'Compra' }))
+
+      expect(await screen.findByText('Aún no hay artículos en esta lista.')).toBeInTheDocument()
     })
   })
 
