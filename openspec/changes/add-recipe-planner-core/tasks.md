@@ -73,8 +73,9 @@
   <!-- El pulido de UX para no dejar pantallas en blanco -->
 - [x] 6.2 Revisar responsive final en móvil y escritorio sobre las 3 vistas en conjunto; verificar que no hay desbordes ni controles inalcanzables en 375 px/1440 px
   <!-- Última pasada de responsive integral -->
-- [ ] 6.3 Redesplegar en Vercel en producción y ejecutar un smoke test manual con una receta real de punta a punta; verificar que el flujo login → receta → plan → compra funciona en móvil y PC
+- [x] 6.3 Redesplegar en Vercel en producción y ejecutar un smoke test manual con una receta real de punta a punta; verificar que el flujo login → receta → plan → compra funciona en móvil y PC
   <!-- Aceptación final contra el entorno real -->
+- [ ] 6.4 Configurar rewrite de SPA en Vercel para que las rutas internas se carguen y recarguen directamente; verificar `/plan` y `/shopping-list`
 
 ## Workflow follow-up
 
