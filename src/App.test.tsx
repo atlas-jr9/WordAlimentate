@@ -145,6 +145,59 @@ describe('login', () => {
   })
 })
 
+describe('navigation and empty states', () => {
+  beforeEach(() => {
+    authMocks.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-id' } } },
+      error: null,
+    })
+  })
+
+  it('guides the user from each empty view and marks the active navigation link', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(
+      'Aún no hay recetas. Añade la primera para empezar tu recetario.',
+    )).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: 'Navegación principal' })
+    expect(within(navigation).getByRole('link', { name: 'Recetas' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    await user.click(screen.getByRole('link', { name: 'Crear primera receta' }))
+    expect(await screen.findByRole('heading', { name: 'Nueva receta' })).toBeInTheDocument()
+
+    await user.click(within(navigation).getByRole('link', { name: 'Plan semanal' }))
+    expect(await screen.findByText('Todavía no tienes recetas para planificar.'))
+      .toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: 'Plan semanal' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(screen.getByRole('link', { name: 'Crear una receta' })).toHaveAttribute(
+      'href',
+      '/recipes/new',
+    )
+
+    await user.click(within(navigation).getByRole('link', { name: 'Compra' }))
+    expect(await screen.findByText('Aún no hay artículos en esta lista.')).toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: 'Compra' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(screen.getByRole('link', { name: 'Ir al plan semanal' })).toHaveAttribute(
+      'href',
+      '/plan',
+    )
+  })
+})
+
 describe('recipe catalog', () => {
   const recipe = {
     id: 'recipe-id',

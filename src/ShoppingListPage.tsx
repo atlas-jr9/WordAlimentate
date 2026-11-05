@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { getWeekStart, listPlanSlots } from './lib/planner'
 import { INGREDIENT_UNITS, listRecipes } from './lib/recipes'
 import type { IngredientUnit } from './lib/recipes'
@@ -253,9 +254,21 @@ export default function ShoppingListPage() {
 
       {isLoading && <p className="text-stone-600" role="status">Cargando lista…</p>}
       {!isLoading && items.length === 0 && !errorMessage && (
-        <p className="rounded-xl border border-dashed border-stone-300 bg-white px-4 py-8 text-center text-stone-600">
-          Aún no hay artículos en esta lista.
-        </p>
+        <div
+          className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-stone-300 bg-white px-5 py-6"
+          role="status"
+        >
+          <p className="text-stone-600">Aún no hay artículos en esta lista.</p>
+          <p className="text-sm text-stone-600">
+            Añade un artículo manual o asigna recetas para generar tu compra semanal.
+          </p>
+          <Link
+            className="inline-flex min-h-11 items-center rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2"
+            to="/plan"
+          >
+            Ir al plan semanal
+          </Link>
+        </div>
       )}
       {!isLoading && items.length > 0 && (
         <ul aria-label="Artículos de la lista" className="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white shadow-sm">

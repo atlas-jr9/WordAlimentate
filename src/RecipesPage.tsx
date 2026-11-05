@@ -94,9 +94,18 @@ export default function RecipesPage() {
         </p>
       )}
       {!isLoading && !errorMessage && recipes.length === 0 && (
-        <p className="rounded-lg bg-white px-5 py-6 text-stone-600 shadow-sm">
-          Aún no hay recetas. Añade la primera para empezar tu recetario.
-        </p>
+        <div
+          className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-stone-300 bg-white px-5 py-6 shadow-sm"
+          role="status"
+        >
+          <p className="text-stone-600">Aún no hay recetas. Añade la primera para empezar tu recetario.</p>
+          <Link
+            className="inline-flex min-h-11 items-center rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2"
+            to="/recipes/new"
+          >
+            Crear primera receta
+          </Link>
+        </div>
       )}
 
       {!isLoading && !errorMessage && recipes.length > 0 && (

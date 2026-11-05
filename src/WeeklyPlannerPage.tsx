@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getWeekStart, listPlanSlots, upsertPlanSlot, clearPlanSlot } from './lib/planner'
 import type { PlanMealSlot, PlanSlot } from './lib/planner'
 import { listRecipes } from './lib/recipes'
@@ -201,6 +202,21 @@ export default function WeeklyPlannerPage() {
         <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
           {slotError}
         </p>
+      )}
+
+      {!isLoading && !isLoadingRecipes && !errorMessage && recipes.length === 0 && (
+        <div
+          className="mb-5 flex flex-col items-start gap-3 rounded-xl border border-dashed border-stone-300 bg-white px-5 py-6 shadow-sm"
+          role="status"
+        >
+          <p className="text-stone-600">Todavía no tienes recetas para planificar.</p>
+          <Link
+            className="inline-flex min-h-11 items-center rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2"
+            to="/recipes/new"
+          >
+            Crear una receta
+          </Link>
+        </div>
       )}
 
       {!isLoading && !errorMessage && (
