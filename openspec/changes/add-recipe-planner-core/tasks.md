@@ -69,7 +69,7 @@
 
 ## 6. Cierre y despliegue
 
-- [ ] 6.1 Ajustar la navegación global (recetas/plan/compra) con estados vacíos amigables en las 3 vistas; verificar que cada vista tiene estado de vacío legible
+- [x] 6.1 Ajustar la navegación global (recetas/plan/compra) con estados vacíos amigables en las 3 vistas; verificar que cada vista tiene estado de vacío legible
   <!-- El pulido de UX para no dejar pantallas en blanco -->
 - [ ] 6.2 Revisar responsive final en móvil y escritorio sobre las 3 vistas en conjunto; verificar que no hay desbordes ni controles inalcanzables en 375 px/1440 px
   <!-- Última pasada de responsive integral -->
