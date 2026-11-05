@@ -264,15 +264,21 @@ export default function ShoppingListPage() {
             const unitLabel = INGREDIENT_UNITS.find(({ value }) => value === item.unit)?.label.toLocaleLowerCase()
 
             return (
-              <li className="flex items-center gap-3 px-4 py-3" key={item.id}>
-                <input
-                  aria-label={`Marcar ${item.name} como comprado`}
-                  checked={item.checked}
-                  className="size-6 shrink-0 accent-emerald-800"
-                  disabled={Boolean(updatingItemId)}
-                  onChange={() => void handleCheckedChange(item)}
-                  type="checkbox"
-                />
+              <li className="flex min-h-16 items-center gap-3 px-2 py-2 sm:px-4" key={item.id}>
+                <label
+                  className="flex min-h-12 min-w-12 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-lg focus-within:ring-2 focus-within:ring-emerald-700"
+                  htmlFor={`checked-${item.id}`}
+                >
+                  <input
+                    aria-label={`Marcar ${item.name} como comprado`}
+                    checked={item.checked}
+                    className="size-6 accent-emerald-800"
+                    disabled={Boolean(updatingItemId)}
+                    id={`checked-${item.id}`}
+                    onChange={() => void handleCheckedChange(item)}
+                    type="checkbox"
+                  />
+                </label>
                 <div className="min-w-0 flex-1">
                   <p className={`break-words font-medium ${item.checked ? 'text-stone-500 line-through' : 'text-stone-900'}`}>
                     {item.name}
