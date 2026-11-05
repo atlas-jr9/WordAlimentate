@@ -8,7 +8,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { MemoryRouter } from 'react-router-dom'
 import { getWeekStart } from './lib/planner'
 import type { PlanSlot, PlanSlotInput } from './lib/planner'
-import type { Recipe } from './lib/recipes'
+import type { Recipe, RecipeInput } from './lib/recipes'
 import type { ShoppingListItem, ShoppingListItemInput } from './lib/shopping-list-data'
 import App from './App'
 
@@ -503,6 +503,104 @@ describe('weekly planner', () => {
       await user.click(screen.getByRole('link', { name: 'Compra' }))
 
       expect(await screen.findByText('Aún no hay artículos en esta lista.')).toBeInTheDocument()
+    })
+
+    it('creates a recipe, plans it twice, and builds an aggregated list from fixtures', async () => {
+      const user = userEvent.setup()
+      const weekStart = getWeekStart()
+      let recipes: Recipe[] = []
+      let savedSlots: PlanSlot[] = []
+
+      recipeMocks.createRecipe.mockImplementation(async (input: RecipeInput) => {
+        const recipe: Recipe = {
+          id: 'recipe-integration',
+          ...input,
+          createdAt: '2026-11-05T12:00:00.000Z',
+          ingredients: input.ingredients.map((ingredient, index) => ({
+            ...ingredient,
+            id: `ingredient-${index}`,
+          })),
+          tags: input.tags ?? [],
+        }
+        recipes = [recipe]
+        return recipe
+      })
+      recipeMocks.listRecipes.mockImplementation(async () => recipes)
+      plannerMocks.listPlanSlots.mockImplementation(async (requestedWeek: string) =>
+        savedSlots.filter((slot) => slot.weekStart === requestedWeek),
+      )
+      plannerMocks.upsertPlanSlot.mockImplementation(async (input: PlanSlotInput) => {
+        const recipe = recipes.find(({ id }) => id === input.recipeId)
+        if (!recipe) throw new Error('No se encontró la receta de prueba.')
+
+        const savedSlot: PlanSlot = {
+          id: `${input.dayOfWeek}-${input.slot}`,
+          ...input,
+          recipe: {
+            id: recipe.id,
+            name: recipe.name,
+            foodType: recipe.foodType,
+            servings: recipe.servings,
+          },
+        }
+        savedSlots = [
+          ...savedSlots.filter(
+            (slot) =>
+              slot.weekStart !== input.weekStart ||
+              slot.dayOfWeek !== input.dayOfWeek ||
+              slot.slot !== input.slot,
+          ),
+          savedSlot,
+        ]
+        return savedSlot
+      })
+
+      render(
+        <MemoryRouter initialEntries={['/recipes/new']}>
+          <App />
+        </MemoryRouter>,
+      )
+
+      await user.type(await screen.findByLabelText('Nombre de la receta'), 'Sopa de zanahoria')
+      await user.type(screen.getByLabelText('Cantidad'), '2')
+      await user.type(screen.getByLabelText('Nombre'), 'Zanahoria')
+      await user.click(screen.getByRole('button', { name: 'Añadir ingrediente' }))
+      await user.type(screen.getAllByLabelText('Nombre')[1], 'Sal')
+      await user.type(screen.getAllByLabelText('Cantidad')[1], '1')
+      await user.selectOptions(screen.getAllByLabelText('Unidad')[1], 'approx')
+      await user.click(screen.getAllByLabelText('Es un ingrediente de despensa')[1])
+      await user.type(screen.getByLabelText('Instrucciones'), 'Hervir y triturar.')
+      await user.click(screen.getByRole('button', { name: 'Guardar receta' }))
+
+      const recipe = await screen.findByRole('heading', { name: 'Sopa de zanahoria' })
+      expect(recipe).toBeInTheDocument()
+      expect(recipeMocks.createRecipe).toHaveBeenCalledWith({
+        name: 'Sopa de zanahoria',
+        foodType: 'lunch',
+        servings: 2,
+        instructions: 'Hervir y triturar.',
+        tags: [],
+        ingredients: [
+          { name: 'Zanahoria', quantity: 2, unit: 'uds', pantry: false },
+          { name: 'Sal', quantity: 1, unit: 'approx', pantry: true },
+        ],
+      })
+
+      await user.click(screen.getByRole('link', { name: 'Plan semanal' }))
+      const lunchSlot = await screen.findByLabelText('Receta para Comida del Lunes')
+      await user.selectOptions(lunchSlot, 'recipe-integration')
+      await waitFor(() => expect(lunchSlot).toHaveValue('recipe-integration'))
+
+      const dinnerSlot = screen.getByLabelText('Receta para Cena del Jueves')
+      await user.selectOptions(dinnerSlot, 'recipe-integration')
+      await waitFor(() => expect(dinnerSlot).toHaveValue('recipe-integration'))
+      expect(savedSlots).toHaveLength(2)
+      expect(savedSlots.every((slot) => slot.weekStart === weekStart)).toBe(true)
+
+      await user.click(screen.getByRole('link', { name: 'Compra' }))
+      expect(await screen.findByText('Zanahoria')).toBeInTheDocument()
+      expect(screen.getByText('4 unidades')).toBeInTheDocument()
+      expect(screen.queryByText('Sal')).not.toBeInTheDocument()
     })
   })
 

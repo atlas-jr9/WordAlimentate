@@ -220,29 +220,37 @@ function AuthenticatedHome() {
   }
 
   return (
-    <main className="min-h-screen bg-stone-50 px-4 py-8">
+    <main className="min-h-screen bg-stone-50 px-4 pb-24 pt-8 md:px-4 md:py-8">
       <div className={`mx-auto w-full ${pathname === '/plan' ? 'max-w-7xl' : 'max-w-5xl'}`}>
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Link className="text-xl font-semibold text-stone-900" to="/">WordAlimentate</Link>
-          <nav aria-label="Navegación principal" className="flex flex-wrap items-center gap-4">
+          <nav
+            aria-label="Navegación principal"
+            className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-stone-200 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-lg backdrop-blur md:static md:flex md:items-center md:gap-4 md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none"
+          >
             <Link
-              className="text-sm font-medium text-stone-700 hover:text-emerald-800"
+              aria-current={pathname === '/' || pathname.startsWith('/recipes/') ? 'page' : undefined}
+              className={`flex min-h-14 items-center justify-center px-2 text-center text-sm font-medium touch-manipulation hover:text-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 md:min-h-0 md:justify-start md:px-0 ${pathname === '/' || pathname.startsWith('/recipes/') ? 'text-emerald-900' : 'text-stone-700'}`}
               to="/"
             >
               Recetas
             </Link>
             <Link
-              className="text-sm font-medium text-stone-700 hover:text-emerald-800"
+              aria-current={pathname === '/plan' ? 'page' : undefined}
+              className={`flex min-h-14 items-center justify-center px-2 text-center text-sm font-medium touch-manipulation hover:text-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 md:min-h-0 md:justify-start md:px-0 ${pathname === '/plan' ? 'text-emerald-900' : 'text-stone-700'}`}
               to="/plan"
             >
               Plan semanal
             </Link>
             <Link
-              className="text-sm font-medium text-stone-700 hover:text-emerald-800"
+              aria-current={pathname === '/shopping-list' ? 'page' : undefined}
+              className={`flex min-h-14 items-center justify-center px-2 text-center text-sm font-medium touch-manipulation hover:text-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 md:min-h-0 md:justify-start md:px-0 ${pathname === '/shopping-list' ? 'text-emerald-900' : 'text-stone-700'}`}
               to="/shopping-list"
             >
               Compra
             </Link>
+          </nav>
+          <div className="flex items-center gap-4">
             <button
               className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSigningOut}
@@ -251,7 +259,7 @@ function AuthenticatedHome() {
             >
               {isSigningOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
             </button>
-          </nav>
+          </div>
         </header>
         {signOutError && (
           <p className="mb-6 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
