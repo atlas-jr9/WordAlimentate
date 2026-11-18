@@ -75,7 +75,7 @@
   <!-- Última pasada de responsive integral -->
 - [x] 6.3 Redesplegar en Vercel en producción y ejecutar un smoke test manual con una receta real de punta a punta; verificar que el flujo login → receta → plan → compra funciona en móvil y PC
   <!-- Aceptación final contra el entorno real -->
-- [ ] 6.4 Configurar rewrite de SPA en Vercel para que las rutas internas se carguen y recarguen directamente; verificar `/plan` y `/shopping-list`
+- [x] 6.4 Configurar rewrite de SPA en Vercel para que las rutas internas se carguen y recarguen directamente; verificar `/plan` y `/shopping-list`
 
 ## Workflow follow-up
 
